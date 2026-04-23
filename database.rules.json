@@ -1,0 +1,12 @@
+{
+    "rules": {
+        "categories": {
+            ".read": "auth != null",
+            ".write": "auth != null"
+        },
+        "threads": {
+            ".read": "auth != null",
+            ".write": "auth != null"
+        }
+    }
+}
