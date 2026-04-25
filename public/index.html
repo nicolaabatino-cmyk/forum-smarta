@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forum S.Marta</title>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="app">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <button id="close-sidebar-btn" class="sidebar-close-btn"><i class="fa-solid fa-xmark"></i></button>
+            <div style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 20px; align-items: center;">
+                <div class="brand">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span>Forum S.Marta</span>
+                </div>
+                <div style="font-size: 0.7rem; color: var(--text-secondary); opacity: 0.8;">
+                    WebApp Created by A.N. - rev.1
+                </div>
+            </div>
+
+            <div class="user-profile" id="user-profile-section">
+                <!-- Injected via JS -->
+            </div>
+
+            <nav class="nav-menu">
+                <div class="nav-header">CATEGORIE</div>
+                <ul id="category-list">
+                    <!-- Categories injected here -->
+                </ul>
+
+                <button id="add-category-btn" class="btn-ghost hidden">
+                    <i class="fa-solid fa-plus"></i> Nuova Categoria
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <button id="menu-toggle-btn" class="menu-toggle"><i class="fa-solid fa-bars"></i></button>
+                <h2 id="page-title">Discussioni Recenti</h2>
+                <div class="search-bar">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="search-input" placeholder="Cerca discussioni...">
+                </div>
+                <div class="actions">
+                    <button id="new-discussion-btn" class="btn-primary">
+                        <i class="fa-solid fa-pen-to-square"></i> <span>Nuova Discussione</span>
+                    </button>
+                    <button id="login-btn" class="btn-secondary"><span>Accedi</span></button>
+                </div>
+            </header>
+
+            <div id="content-area" class="content-grid">
+                <!-- Discussions or Posts injected here -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="overlay-header">
+            <img src="logo-smarta.png" alt="Logo S. Marta" class="overlay-logo">
+            <h1 class="overlay-title">Forum docenti S. Marta</h1>
+        </div>
+
+        <!-- Login Modal -->
+        <div id="login-modal" class="modal hidden">
+            <div class="modal-header">
+                <h3>Accedi</h3>
+                <button class="close-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="username-input" placeholder="Indirizzo Email Istituzionale" class="input-field">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="admin-checkbox">
+                    <label for="admin-checkbox">Entra come Amministratore</label>
+                </div>
+                <input type="password" id="admin-password-input" placeholder="Password Amministratore"
+                    class="input-field hidden">
+                <button id="confirm-login" class="btn-primary full-width">Entra</button>
+                <div class="login-instructions">
+                    <p style="margin-bottom: 10px; font-weight: bold; color: var(--accent-primary);">Inserisci la tua
+                        mail istituzionale per accedere.</p>
+                    <p>Benvenuti nel forum dell’Istituto S. Marta. Questo forum è stato creato per i docenti, come
+                        spazio di confronto e scambio di pensieri, dubbi e domande.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create Category Modal -->
+        <div id="create-category-modal" class="modal hidden">
+            <div class="modal-header">
+                <h3>Nuova Categoria</h3>
+                <button class="close-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="new-category-name" placeholder="Nome Categoria" class="input-field">
+                <button id="confirm-create-category" class="btn-primary full-width">Crea</button>
+            </div>
+        </div>
+
+        <!-- Create Thread Modal -->
+        <div id="create-thread-modal" class="modal hidden">
+            <div class="modal-header">
+                <h3>Nuova Discussione</h3>
+                <button class="close-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group-row">
+                    <select id="thread-category-select" class="input-field" style="margin-bottom: 0;">
+                        <!-- Options injected -->
+                    </select>
+                    <span id="category-reminder" class="reminder-text">Ricorda di selezionare la categoria!</span>
+                </div>
+                <input type="text" id="new-thread-title" placeholder="Titolo Discussione" class="input-field">
+                <textarea id="new-thread-content" placeholder="Scrivi qualcosa..." class="input-field"
+                    rows="5"></textarea>
+                <button id="confirm-create-thread" class="btn-primary full-width">Pubblica</button>
+            </div>
+        </div>
+
+        <!-- Rules Modal -->
+        <div id="rules-modal" class="modal hidden">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-scroll"></i> REGOLAMENTO DEL FORUM DOCENTI</h3>
+            </div>
+            <div class="modal-body rules-content">
+                <div class="rule-section">
+                    <h4>1. Finalità</h4>
+                    <p>Il forum è uno spazio riservato ai docenti dell’istituto, finalizzato allo scambio professionale,
+                        alla collaborazione e al miglioramento dell’azione didattica ed educativa.</p>
+                </div>
+                <div class="rule-section">
+                    <h4>2. Linguaggio e comportamento</h4>
+                    <ul>
+                        <li>Utilizzare un linguaggio corretto, rispettoso e professionale.</li>
+                        <li>Non sono ammessi toni polemici, offensivi o denigratori.</li>
+                        <li>Ogni intervento deve contribuire in modo costruttivo alla discussione.</li>
+                    </ul>
+                </div>
+                <div class="rule-section">
+                    <h4>3. Riservatezza</h4>
+                    <ul>
+                        <li>È vietato inserire dati sensibili o informazioni riconducibili direttamente agli studenti o
+                            alle famiglie.</li>
+                        <li>Eventuali riferimenti devono essere sempre anonimi.</li>
+                    </ul>
+                </div>
+                <div class="rule-section">
+                    <h4>4. Pertinenza dei contenuti</h4>
+                    <ul>
+                        <li>Inserire i messaggi nella categoria più appropriata.</li>
+                        <li>Evitare contenuti fuori tema o ridondanti.</li>
+                    </ul>
+                </div>
+                <div class="rule-section">
+                    <h4>5. Responsabilità dei contenuti</h4>
+                    <ul>
+                        <li>Ogni utente è responsabile di ciò che pubblica.</li>
+                        <li>I moderatori possono intervenire per spostare, modificare o rimuovere contenuti non conformi
+                            al regolamento.</li>
+                    </ul>
+                </div>
+                <div class="rule-section">
+                    <h4>6. Uso del forum</h4>
+                    <ul>
+                        <li>Il forum non sostituisce le comunicazioni ufficiali della scuola, ma le integra.</li>
+                        <li>Si invita a consultarlo regolarmente per favorire una comunicazione efficace.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="accept-rules-btn" class="btn-primary full-width">Ho letto e accetto - Procedi al
+                    Forum</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+    <script src="allowedUsers.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
