@@ -109,13 +109,13 @@ app.post('/api/notify', async (req, res) => {
             from: `"Forum Santa Marta" <${process.env.EMAIL_USER}>`,
             to: recipients,
             subject: `Nuovo post in "${catStr}" da ${author}`,
-            text: `È stato pubblicato un nuovo post o una risposta da ${author} nella categoria "${catStr}", discussione "${discStr}".\n\nContenuto: ${content}${repliesText}\n\nAccedi al forum per partecipare alla discussione: http://localhost:3000/`,
+            text: `È stato pubblicato un nuovo post o una risposta da ${author} nella categoria "${catStr}", discussione "${discStr}".\n\nContenuto: ${content}${repliesText}\n\nAccedi al forum per partecipare alla discussione: https://forum-smarta.onrender.com/`,
             html: `<div style="font-family: sans-serif; line-height: 1.5; color: #333;">
                    <p>È stato pubblicato un nuovo post o una risposta da <strong>${author}</strong> nella categoria <strong style="color: #dc2626;">"${catStr}"</strong>, discussione <strong style="color: #2563eb;">"${discStr}"</strong>.</p>
                    <p><strong>Post:</strong><br/>${content.replace(/\n/g, '<br>')}</p>
                    <br/>
                    ${repliesHtml}
-                   <p style="margin-top: 20px;"><a href="http://localhost:3000/" style="padding: 10px 15px; background: #4f46e5; color: white; text-decoration: none; border-radius: 5px;">Vai al forum</a></p>
+                   <p style="margin-top: 20px;"><a href="https://forum-smarta.onrender.com/" style="padding: 10px 15px; background: #4f46e5; color: white; text-decoration: none; border-radius: 5px;">Vai al forum</a></p>
                    </div>`
         };
 
