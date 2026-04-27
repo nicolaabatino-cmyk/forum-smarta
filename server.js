@@ -95,15 +95,8 @@ app.post('/api/notify', async (req, res) => {
             });
         }
 
-        // Trova tutte le email dei colleghi richiesti compreso l'admin nicolaabatino
-        const recipients = allowedUsers.filter(email => 
-            email.includes('patrignani') || 
-            email.includes('delprete') || 
-            email.includes('marinelli') || 
-            email.includes('visconti') || 
-            email.includes('ortolani') || 
-            email.includes('nicolaabatino')
-        ).join(', ');
+        // Invia la notifica a tutti gli utenti della lista autorizzata
+        const recipients = allowedUsers.join(', ');
 
         const mailOptions = {
             from: `"Forum Santa Marta" <${process.env.EMAIL_USER}>`,
