@@ -49,13 +49,13 @@ let transporter;
 if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
     transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
-        port: 587,
-        secure: false, // usa STARTTLS su porta 587
-        requireTLS: true,
+        port: 465,
+        secure: true,
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS
-        }
+        },
+        family: 4 // Forza l'uso di IPv4 (risolve il timeout su Render)
     });
 } else {
     console.warn("ATTENZIONE: Credenziali EMAIL mancanti nel file .env");
