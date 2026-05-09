@@ -44,10 +44,10 @@ try {
     console.error("Errore nel caricamento di allowedUsers.js", e);
 }
 
-// Configurazione Brevo
-const brevoApiKey = process.env.BREVO_API_KEY;
-if (!brevoApiKey) {
-    console.warn("ATTENZIONE: Chiave BREVO_API_KEY mancante nel file .env. Le notifiche potrebbero non funzionare.");
+// Configurazione Google Apps Script
+const gasUrl = process.env.GAS_URL;
+if (!gasUrl) {
+    console.warn("ATTENZIONE: Chiave GAS_URL mancante nel file .env. Le notifiche potrebbero non funzionare.");
 }
 
 app.post('/api/notify', async (req, res) => {
@@ -79,27 +79,26 @@ app.post('/api/notify', async (req, res) => {
         }
 
         // Determina i destinatari
-        let toList = [{ email: 'nicolaabatino@alberghieropesaro.it' }];
-        let bccList = [];
+        let toList = 'nicolaabatino@alberghieropesaro.it';
+        let bccList = '';
 
         if (notificationsEnabled) {
+            let bccArray = [];
             allowedUsers.forEach(email => {
                 if (email !== 'nicolaabatino@alberghieropesaro.it' && email.includes('@')) {
-                    bccList.push({ email: email });
+                    bccArray.push(email);
                 }
             });
-            console.log(`-> Notifiche ON: invio a Nicola + ${bccList.length} utenti in bcc`);
+            bccList = bccArray.join(',');
+            console.log(`-> Notifiche ON: invio a Nicola + ${bccArray.length} utenti in bcc`);
         } else {
             console.log(`-> Notifiche OFF: invio solo a Nicola`);
         }
 
-        const senderEmail = process.env.EMAIL_USER || 'teknik70000@gmail.com';
-
         const emailData = {
-            sender: { name: "Forum Santa Marta", email: senderEmail },
             to: toList,
+            bcc: bccList,
             subject: `Nuovo post in "${catStr}" da ${author}`,
-            textContent: `È stato pubblicato un nuovo post o una risposta da ${author} nella categoria "${catStr}", discussione "${discStr}".\n\nContenuto: ${content}${repliesText}\n\nAccedi al forum per partecipare alla discussione: https://forum-smarta.onrender.com/`,
             htmlContent: `<div style="font-family: sans-serif; line-height: 1.5; color: #333;">
                    <p>È stato pubblicato un nuovo post o una risposta da <strong>${author}</strong> nella categoria <strong style="color: #dc2626;">"${catStr}"</strong>, discussione <strong style="color: #2563eb;">"${discStr}"</strong>.</p>
                    <p><strong>Post:</strong><br/>${content.replace(/\n/g, '<br>')}</p>
@@ -109,31 +108,30 @@ app.post('/api/notify', async (req, res) => {
                    </div>`
         };
 
-        if (bccList.length > 0) {
-            emailData.bcc = bccList;
-        }
-
-        if (!brevoApiKey) {
-            console.log('-> Invio simulato (manca BREVO_API_KEY):', emailData.subject);
+        if (!gasUrl) {
+            console.log('-> Invio simulato (manca GAS_URL):', emailData.subject);
             return res.status(200).json({ success: true, message: 'Simulazione invio completata' });
         }
 
-        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+        const response = await fetch(gasUrl, {
             method: 'POST',
-            headers: {
-                'accept': 'application/json',
-                'api-key': brevoApiKey,
-                'content-type': 'application/json'
-            },
             body: JSON.stringify(emailData)
         });
 
-        if (!response.ok) {
-            const errData = await response.text();
-            throw new Error(`Errore API Brevo: ${response.status} ${errData}`);
+        const resultText = await response.text();
+        let resultJson;
+        try {
+            resultJson = JSON.parse(resultText);
+        } catch(e) {
+            console.error("Risposta non JSON da GAS:", resultText);
+            throw new Error(`Errore inaspettato da Google Apps Script`);
         }
 
-        console.log('Email inviata con successo tramite Brevo');
+        if (resultJson.error) {
+            throw new Error(`Errore da Google Apps Script: ${resultJson.error}`);
+        }
+
+        console.log('Email inviata con successo tramite Google Apps Script');
         res.status(200).json({ success: true, message: 'Email inviate con successo' });
     } catch (error) {
         console.error('Errore invio email:', error);
