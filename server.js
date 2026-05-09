@@ -80,58 +80,73 @@ app.post('/api/notify', async (req, res) => {
 
         // Determina i destinatari
         let toList = 'nicolaabatino@alberghieropesaro.it';
-        let bccList = '';
+        let bccArray = [];
 
         if (notificationsEnabled) {
-            let bccArray = [];
             allowedUsers.forEach(email => {
                 if (email !== 'nicolaabatino@alberghieropesaro.it' && email.includes('@')) {
                     bccArray.push(email);
                 }
             });
-            bccList = bccArray.join(',');
-            console.log(`-> Notifiche ON: invio a Nicola + ${bccArray.length} utenti in bcc`);
+            console.log(`-> Notifiche ON: invio a Nicola + ${bccArray.length} utenti in bcc (a blocchi di 40)`);
         } else {
             console.log(`-> Notifiche OFF: invio solo a Nicola`);
         }
 
-        const emailData = {
-            to: toList,
-            bcc: bccList,
-            subject: `Nuovo post in "${catStr}" da ${author}`,
-            htmlContent: `<div style="font-family: sans-serif; line-height: 1.5; color: #333;">
-                   <p>È stato pubblicato un nuovo post o una risposta da <strong>${author}</strong> nella categoria <strong style="color: #dc2626;">"${catStr}"</strong>, discussione <strong style="color: #2563eb;">"${discStr}"</strong>.</p>
-                   <p><strong>Post:</strong><br/>${content.replace(/\n/g, '<br>')}</p>
-                   <br/>
-                   ${repliesHtml}
-                   <p style="margin-top: 20px;"><a href="https://forum-smarta.onrender.com/" style="padding: 10px 15px; background: #4f46e5; color: white; text-decoration: none; border-radius: 5px;">Vai al forum</a></p>
-                   </div>`
-        };
+        const htmlContent = `<div style="font-family: sans-serif; line-height: 1.5; color: #333;">
+               <p>È stato pubblicato un nuovo post o una risposta da <strong>${author}</strong> nella categoria <strong style="color: #dc2626;">"${catStr}"</strong>, discussione <strong style="color: #2563eb;">"${discStr}"</strong>.</p>
+               <p><strong>Post:</strong><br/>${content.replace(/\n/g, '<br>')}</p>
+               <br/>
+               ${repliesHtml}
+               <p style="margin-top: 20px;"><a href="https://forum-smarta.onrender.com/" style="padding: 10px 15px; background: #4f46e5; color: white; text-decoration: none; border-radius: 5px;">Vai al forum</a></p>
+               </div>`;
+        const subject = `Nuovo post in "${catStr}" da ${author}`;
 
         if (!gasUrl) {
-            console.log('-> Invio simulato (manca GAS_URL):', emailData.subject);
+            console.log('-> Invio simulato (manca GAS_URL):', subject);
             return res.status(200).json({ success: true, message: 'Simulazione invio completata' });
         }
 
-        const response = await fetch(gasUrl, {
-            method: 'POST',
-            body: JSON.stringify(emailData)
-        });
+        // Funzione interna per inviare un singolo blocco di email
+        const sendBatch = async (bccString) => {
+            const emailData = {
+                to: toList,
+                bcc: bccString,
+                subject: subject,
+                htmlContent: htmlContent
+            };
+            const response = await fetch(gasUrl, {
+                method: 'POST',
+                body: JSON.stringify(emailData)
+            });
+            const resultText = await response.text();
+            let resultJson;
+            try {
+                resultJson = JSON.parse(resultText);
+            } catch(e) {
+                console.error("Risposta non JSON da GAS:", resultText);
+                throw new Error(`Errore inaspettato da Google Apps Script`);
+            }
+            if (resultJson.error) {
+                throw new Error(`Errore da Google Apps Script: ${resultJson.error}`);
+            }
+        };
 
-        const resultText = await response.text();
-        let resultJson;
-        try {
-            resultJson = JSON.parse(resultText);
-        } catch(e) {
-            console.error("Risposta non JSON da GAS:", resultText);
-            throw new Error(`Errore inaspettato da Google Apps Script`);
+        if (bccArray.length === 0) {
+            // Invio solo a Nicola
+            await sendBatch('');
+        } else {
+            // Dividiamo i destinatari in gruppi da 40 per superare il limite di Google
+            const BATCH_SIZE = 40;
+            for (let i = 0; i < bccArray.length; i += BATCH_SIZE) {
+                const batch = bccArray.slice(i, i + BATCH_SIZE);
+                await sendBatch(batch.join(','));
+                // Piccola pausa di 500ms tra un blocco e l'altro per non intasare l'API
+                await new Promise(r => setTimeout(r, 500)); 
+            }
         }
 
-        if (resultJson.error) {
-            throw new Error(`Errore da Google Apps Script: ${resultJson.error}`);
-        }
-
-        console.log('Email inviata con successo tramite Google Apps Script');
+        console.log('Tutte le email sono state inviate con successo tramite Google Apps Script');
         res.status(200).json({ success: true, message: 'Email inviate con successo' });
     } catch (error) {
         console.error('Errore invio email:', error);
