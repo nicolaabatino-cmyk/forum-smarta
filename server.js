@@ -71,11 +71,6 @@ app.post('/api/notify', async (req, res) => {
 
     console.log(`Richiesto invio email notifica per post di ${author} in categoria: ${category}`);
 
-    if (!notificationsEnabled) {
-        console.log(`-> Invio ignorato: le notifiche sono disattivate.`);
-        return res.status(200).json({ success: true, message: 'Notifiche disabilitate via pannello admin' });
-    }
-
     try {
         const catStr = category ? category : 'Varie';
         const discStr = discussionTitle || title || 'Discussione generica';
@@ -95,8 +90,19 @@ app.post('/api/notify', async (req, res) => {
             });
         }
 
-        // Invia la notifica a tutti gli utenti della lista autorizzata
-        const recipients = allowedUsers.join(', ');
+        // Determina i destinatari in base allo stato delle notifiche
+        let recipients;
+        if (notificationsEnabled) {
+            recipients = allowedUsers.join(', ');
+            console.log(`-> Notifiche ON: invio a tutti (${allowedUsers.length} utenti)`);
+        } else {
+            recipients = 'nicolaabatino@alberghieropesaro.it';
+            console.log(`-> Notifiche OFF: invio solo a Nicola (${recipients})`);
+        }
+
+        if (!recipients) {
+            return res.status(200).json({ success: true, message: 'Nessun destinatario trovato' });
+        }
 
         const mailOptions = {
             from: `"Forum Santa Marta" <${process.env.EMAIL_USER}>`,
