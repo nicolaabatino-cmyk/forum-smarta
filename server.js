@@ -44,21 +44,10 @@ try {
     console.error("Errore nel caricamento di allowedUsers.js", e);
 }
 
-// Configura nodemailer
-let transporter;
-if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-    transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true,
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS
-        },
-        family: 4 // Forza l'uso di IPv4 (risolve il timeout su Render)
-    });
-} else {
-    console.warn("ATTENZIONE: Credenziali EMAIL mancanti nel file .env");
+// Configurazione Brevo
+const brevoApiKey = process.env.BREVO_API_KEY;
+if (!brevoApiKey) {
+    console.warn("ATTENZIONE: Chiave BREVO_API_KEY mancante nel file .env. Le notifiche potrebbero non funzionare.");
 }
 
 app.post('/api/notify', async (req, res) => {
@@ -66,10 +55,6 @@ app.post('/api/notify', async (req, res) => {
 
     if (!author || !content) {
         return res.status(400).json({ error: 'Mancano dati necessari' });
-    }
-
-    if (!transporter) {
-        return res.status(500).json({ error: 'Servizio email non configurato' });
     }
 
     console.log(`Richiesto invio email notifica per post di ${author} in categoria: ${category}`);
@@ -93,26 +78,29 @@ app.post('/api/notify', async (req, res) => {
             });
         }
 
-        // Determina i destinatari in base allo stato delle notifiche
-        let recipients;
+        // Determina i destinatari
+        let toList = [{ email: 'nicolaabatino@alberghieropesaro.it' }];
+        let bccList = [];
+
         if (notificationsEnabled) {
-            recipients = allowedUsers.join(', ');
-            console.log(`-> Notifiche ON: invio a tutti (${allowedUsers.length} utenti)`);
+            allowedUsers.forEach(email => {
+                if (email !== 'nicolaabatino@alberghieropesaro.it' && email.includes('@')) {
+                    bccList.push({ email: email });
+                }
+            });
+            console.log(`-> Notifiche ON: invio a Nicola + ${bccList.length} utenti in bcc`);
         } else {
-            recipients = 'nicolaabatino@alberghieropesaro.it';
-            console.log(`-> Notifiche OFF: invio solo a Nicola (${recipients})`);
+            console.log(`-> Notifiche OFF: invio solo a Nicola`);
         }
 
-        if (!recipients) {
-            return res.status(200).json({ success: true, message: 'Nessun destinatario trovato' });
-        }
+        const senderEmail = process.env.EMAIL_USER || 'teknik70000@gmail.com';
 
-        const mailOptions = {
-            from: `"Forum Santa Marta" <${process.env.EMAIL_USER}>`,
-            to: recipients,
+        const emailData = {
+            sender: { name: "Forum Santa Marta", email: senderEmail },
+            to: toList,
             subject: `Nuovo post in "${catStr}" da ${author}`,
-            text: `È stato pubblicato un nuovo post o una risposta da ${author} nella categoria "${catStr}", discussione "${discStr}".\n\nContenuto: ${content}${repliesText}\n\nAccedi al forum per partecipare alla discussione: https://forum-smarta.onrender.com/`,
-            html: `<div style="font-family: sans-serif; line-height: 1.5; color: #333;">
+            textContent: `È stato pubblicato un nuovo post o una risposta da ${author} nella categoria "${catStr}", discussione "${discStr}".\n\nContenuto: ${content}${repliesText}\n\nAccedi al forum per partecipare alla discussione: https://forum-smarta.onrender.com/`,
+            htmlContent: `<div style="font-family: sans-serif; line-height: 1.5; color: #333;">
                    <p>È stato pubblicato un nuovo post o una risposta da <strong>${author}</strong> nella categoria <strong style="color: #dc2626;">"${catStr}"</strong>, discussione <strong style="color: #2563eb;">"${discStr}"</strong>.</p>
                    <p><strong>Post:</strong><br/>${content.replace(/\n/g, '<br>')}</p>
                    <br/>
@@ -121,8 +109,31 @@ app.post('/api/notify', async (req, res) => {
                    </div>`
         };
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log('Email inviata con successo: ' + info.response);
+        if (bccList.length > 0) {
+            emailData.bcc = bccList;
+        }
+
+        if (!brevoApiKey) {
+            console.log('-> Invio simulato (manca BREVO_API_KEY):', emailData.subject);
+            return res.status(200).json({ success: true, message: 'Simulazione invio completata' });
+        }
+
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+            method: 'POST',
+            headers: {
+                'accept': 'application/json',
+                'api-key': brevoApiKey,
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify(emailData)
+        });
+
+        if (!response.ok) {
+            const errData = await response.text();
+            throw new Error(`Errore API Brevo: ${response.status} ${errData}`);
+        }
+
+        console.log('Email inviata con successo tramite Brevo');
         res.status(200).json({ success: true, message: 'Email inviate con successo' });
     } catch (error) {
         console.error('Errore invio email:', error);
