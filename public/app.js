@@ -909,13 +909,13 @@ function updateNotificationBtn() {
 
     if (btnText && btn && icon) {
         if (store.notificationsEnabled) {
-            btnText.textContent = 'Notifiche Email: ON';
+            btnText.textContent = 'Notifiche: A Tutti';
             btn.style.borderColor = 'var(--accent-primary)';
             btn.style.color = 'var(--accent-primary)';
             btn.style.background = 'rgba(99, 102, 241, 0.1)';
             icon.className = 'fa-solid fa-bell';
         } else {
-            btnText.textContent = 'Notifiche Email: OFF';
+            btnText.textContent = 'Notifiche: Solo Nicola';
             btn.style.borderColor = 'var(--text-secondary)';
             btn.style.color = 'var(--text-secondary)';
             btn.style.background = 'transparent';
