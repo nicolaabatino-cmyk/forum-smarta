@@ -45,9 +45,17 @@ try {
 }
 
 // Configurazione Google Apps Script
-const gasUrl = process.env.GAS_URL;
-if (!gasUrl) {
-    console.warn("ATTENZIONE: Chiave GAS_URL mancante nel file .env. Le notifiche potrebbero non funzionare.");
+const gasUrls = [
+  process.env.GAS_URL,    // legacy variable (if still set)
+  process.env.GAS_URL_1,
+  process.env.GAS_URL_2,
+  process.env.GAS_URL_3,
+  process.env.GAS_URL_4
+].filter(Boolean); // rimuove eventuali variabili non impostate
+let urlIndex = 0; // indice per round‑robin
+
+if (gasUrls.length === 0) {
+  console.warn("ATTENZIONE: Nessuna GAS_URL impostata. Le notifiche saranno simulate.");
 }
 
 app.post('/api/notify', async (req, res) => {
@@ -102,7 +110,8 @@ app.post('/api/notify', async (req, res) => {
                </div>`;
         const subject = `Nuovo post in "${catStr}" da ${author}`;
 
-        if (!gasUrl) {
+        // Se non ci sono URL valide, simuliamo l'invio
+        if (gasUrls.length === 0) {
             console.log('-> Invio simulato (manca GAS_URL):', subject);
             return res.status(200).json({ success: true, message: 'Simulazione invio completata' });
         }
@@ -115,7 +124,9 @@ app.post('/api/notify', async (req, res) => {
                 subject: subject,
                 htmlContent: htmlContent
             };
-            const response = await fetch(gasUrl, {
+            const url = gasUrls[urlIndex];
+            urlIndex = (urlIndex + 1) % gasUrls.length; // round‑robin
+            const response = await fetch(url, {
                 method: 'POST',
                 body: JSON.stringify(emailData)
             });
